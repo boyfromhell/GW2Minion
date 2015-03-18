@@ -39,19 +39,7 @@ end
 -- ACCESSORS
 -- Global function to get current marker
 function GetCurrentMarker()
-	if (ValidTable(ml_task_hub:CurrentTask())) then
-		if (ValidTable(ml_task_hub:CurrentTask().currentMarker)) then
-			return ml_task_hub:CurrentTask().currentMarker
-		end
-	end
-	
-	if (ValidTable(ml_task_hub:RootTask())) then
-		if (ValidTable(ml_task_hub:RootTask().currentMarker)) then
-			return ml_task_hub:RootTask().currentMarker
-		end
-	end
-	
-    return nil
+    return ml_marker_mgr.currentMarker
 end
 
 function ml_marker_mgr.GetList(markerType, filterEnabled, filterLevel)
@@ -574,12 +562,8 @@ function ml_marker_mgr.CreateEditWindow(marker)
 		
 		local templateMarker = ml_marker_mgr.templateList[gMarkerMgrType]
 		for fieldName, fieldTable in pairs(templateMarker.fields) do
-			local choiceString = templateMarker:GetFieldChoices(fieldName)
 			if not (marker:HasField(fieldName)) then
-				marker:AddField(marker:GetFieldType(fieldName), fieldName, marker:GetFieldValue(fieldName), choiceString)
-			end
-			if (marker:GetFieldChoices(fieldName) ~= choiceString) then
-				marker:SetFieldChoices(fieldName, choiceString)
+				marker:AddField(marker:GetFieldType(fieldName), fieldName, marker:GetFieldValue(fieldName))
 			end
 		end
 		
@@ -588,7 +572,6 @@ function ml_marker_mgr.CreateEditWindow(marker)
 		if (ValidTable(fieldNames)) then
 			for _, name in pairsByKeys(fieldNames) do
 				local fieldType = marker:GetFieldType(name)
-				
 				if (fieldType == "float" or fieldType == "string") then
 					GUI_NewField(ml_marker_mgr.editwindow.name,name,"Field_"..name, strings[gCurrentLanguage].markerFields)
 				elseif (fieldType == "int") then
@@ -597,9 +580,6 @@ function ml_marker_mgr.CreateEditWindow(marker)
 					GUI_NewButton(ml_marker_mgr.editwindow.name,name,"Field_"..name, strings[gCurrentLanguage].markerFields)
 				elseif (fieldType == "checkbox") then
 					GUI_NewCheckbox(ml_marker_mgr.editwindow.name,name,"Field_"..name, strings[gCurrentLanguage].markerFields)
-				elseif (fieldType == "combobox") then
-					local choiceString = marker:GetFieldChoices(name)
-					GUI_NewComboBox(ml_marker_mgr.editwindow.name,name,"Field_"..name, strings[gCurrentLanguage].markerFields, choiceString)
 				end
 				
 				if (fieldType ~= "button") then
@@ -624,9 +604,7 @@ function ml_marker_mgr.HandleInit()
 	if (Settings.minionlib.gMarkerMgrMode == nil) then
 		Settings.minionlib.gMarkerMgrMode = strings[gCurrentLanguage].markerList
 	end
-    if (Settings.minionlib.lastSelectedMarkerType == nil) then
-		Settings.minionlib.lastSelectedMarkerType = strings[gCurrentLanguage].grindMarker
-	end
+    
     if (Settings.minionlib.lastSelectedMarker == nil) then
         Settings.minionlib.lastSelectedMarker = {}
     end
@@ -650,7 +628,7 @@ function ml_marker_mgr.HandleInit()
     GUI_WindowVisible(ml_marker_mgr.mainwindow.name,false)
     
     -- marker editor window
-    GUI_NewWindow(ml_marker_mgr.editwindow.name, ml_marker_mgr.mainwindow.x+ml_marker_mgr.mainwindow.w, ml_marker_mgr.mainwindow.y, ml_marker_mgr.editwindow.w, ml_marker_mgr.editwindow.h,true)
+    GUI_NewWindow(ml_marker_mgr.editwindow.name, ml_marker_mgr.mainwindow.x+ml_marker_mgr.mainwindow.w, ml_marker_mgr.mainwindow.y, ml_marker_mgr.editwindow.w, ml_marker_mgr.editwindow.h)
     GUI_NewField(ml_marker_mgr.editwindow.name, "Placeholder", "gPlaceholder", strings[gCurrentLanguage].markerFields)
     GUI_NewButton(ml_marker_mgr.editwindow.name,strings[gCurrentLanguage].deleteMarker,"ml_marker_mgr.DeleteMarker")
 	GUI_NewButton(ml_marker_mgr.editwindow.name,strings[gCurrentLanguage].removeMarker,"ml_marker_mgr.RemoveMarker")
@@ -662,36 +640,22 @@ function ml_marker_mgr.HandleInit()
 	gMarkerMgrMode = Settings.minionlib.gMarkerMgrMode
 end
 
-function ml_marker_mgr.SetMarkerType(strType)
-	gMarkerMgrType = strType
-	ml_marker_mgr.RefreshMarkerNames()
-	ml_marker_mgr.currentEditMarker = nil
-	
-	local lastSelected = Settings.minionlib.lastSelectedMarker
-	if (ValidTable(lastSelected)) then
-		if (lastSelected[gMarkerMgrType]) then
-			gMarkerMgrName = lastSelected[gMarkerMgrType]
-		end
-	end
-end
-
 function ml_marker_mgr.GUIVarUpdate(Event, NewVals, OldVals)
     for k,v in pairs(NewVals) do
 		if 	(k == "gMarkerMgrType") then
-			Settings.minionlib.lastSelectedMarkerType = gMarkerMgrType
 			ml_marker_mgr.RefreshMarkerNames()
 			GUI_WindowVisible(ml_marker_mgr.editwindow.name,false)
 			ml_marker_mgr.currentEditMarker = nil
 		elseif (string.sub(k,1,6) == "Field_") then
+			d("edited field = "..tostring(string.sub(k,7)))
 			local name = string.sub(k,7)
 			if (ValidTable(ml_marker_mgr.currentEditMarker)) then
 				local value = nil
 				if (ml_marker_mgr.currentEditMarker:GetFieldType(name) == "string") then
 					value = v
 				elseif (ml_marker_mgr.currentEditMarker:GetFieldType(name) == "checkbox") then
-					value = v
-				elseif (ml_marker_mgr.currentEditMarker:GetFieldType(name) == "combobox") then
-					value = v
+					d("value is a checkbox type, v ="..tostring(v))
+					value = tostring(v)
 				else
 					value = tonumber(v)
 				end

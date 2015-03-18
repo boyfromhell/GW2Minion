@@ -14,7 +14,6 @@ ml_task.overwatch_elements = {}
 ml_task.breakUpdate = false
 ml_task.delayTime = 0
 ml_task.delayTimer = 0
-ml_task.preserveSubtasks = false
 
 -- These functions are NOT overwritten in derived tasks
 
@@ -27,11 +26,6 @@ end
 
 function ml_task:isValid()
 	return self.valid
-end
-
-function ml_task:Invalidate()
-	ml_debug(self.name.."->Invalidate(Fail)()")
-	self.valid = false
 end
 
 function ml_task:hasCompleted()
@@ -92,19 +86,13 @@ function ml_task:Update()
 		end
 		
 		if(self:ProcessOverWatch()) then
-			if (not self.preserveSubtasks) then
-				ml_debug(self.name.."->ProcessOverWatch executed an effect, breaking loop")
-				--process overwatch element requested to break update loop
-				--only delete subtask if we didn't just add it via our overwatch cne
-
-				if (self.subtask ~= nil and (currentSubtaskName ~= nil or self.subtask.name == currentSubtaskName)) then
-					self:DeleteSubTasks()
-				end
-				
-				break
-			else
-				self.preserveSubtasks = false
+			ml_debug(self.name.."->ProcessOverWatch executed an effect, breaking loop")
+			--process overwatch element requested to break update loop
+			--only delete subtask if we didn't just add it via our overwatch cne
+			if (self.subtask ~= nil and (currentSubtaskName ~= nil or self.subtask.name == currentSubtaskName)) then
+				self:DeleteSubTasks()
 			end
+			break
 		end
 		
         if ( self.subtask ~= nil ) then
@@ -141,6 +129,9 @@ function ml_task:Process()
 		ml_cne_hub.clear_queue()
 		ml_cne_hub.eval_elements(self.process_elements)
 
+
+
+
 		ml_cne_hub.queue_to_execute()
 		ml_cne_hub.execute()
 		return false
@@ -157,31 +148,23 @@ function ml_task:ProcessOverWatch()
 		ml_cne_hub.clear_queue()
 		ml_cne_hub.eval_elements(self.overwatch_elements)
 
+
+
+
 		ml_cne_hub.queue_to_execute()
 		return ml_cne_hub.execute()
 	end
 end
 
 function ml_task:SetDelay(delayTimer)
-	--ignore 0 case
-	if(	type(delayTimer) == "number" and delayTimer > 0) then
+	if(	type(delayTimer) == "number" and
+		delayTimer > 0)
+	then
 		self.delayTime = ml_global_information.Now
 		self.delayTimer = delayTimer
-	elseif(	type(delayTimer) == "number" and delayTimer < 0) then
-		ml_error("Invalid delaytimer input - negative number")
+	else
+		ml_error("Invalid delaytimer input")
 	end
-end
-
-function ml_task:IsDelayed()
-	return TimeSince(self.delayTime) < self.delayTimer
-end
-
-function ml_task:GetDelay()
-	if(self:IsDelayed()) then
-		return self.delayTimer - TimeSince(self.delayTime)
-	end
-	
-	return nil
 end
 
 --These functions ARE overwritten in derived tasks
@@ -213,7 +196,7 @@ function ml_task:IsGoodToAbort()
 end
 
 function ml_task:add( element, elementList )
-	--ml_debug ( "adding element " .. tostring( element.name ) )
+	ml_debug ( "adding element " .. tostring( element.name ) )
 	if ( element ~= nil and element.isa ~= nil and element:isa( ml_element ) ) then
 		table.insert( elementList, element )
 	else
@@ -234,6 +217,7 @@ end
 
 function ml_task:task_complete_execute()
     self.completed = true
+
 end
 
 function ml_task:task_fail_eval()
@@ -242,6 +226,7 @@ end
 
 function ml_task:task_fail_execute()
     self.completed = true
+
 end
 
 function ml_task:AddTaskCheckCEs()
@@ -279,10 +264,6 @@ function ml_task.Create()
 end
 
 function ml_task:UIInit()
-	return true
-end
-
-function ml_task:UIDestroy()
 	return true
 end
 

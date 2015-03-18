@@ -4,18 +4,18 @@
  
 -- DumpTable : recursive print the passed table
 function DT( atable, intend )
-	if ( intend == nil ) then intend = 1 end
+		if ( intend == nil ) then intend = 1 end
 
-	if ( atable ~= nil and type( atable )=="table" ) then
-		for ItemField, FieldContent in pairs( atable ) do
-			if type( FieldContent ) == "table" then
-				ml_debug( string.rep( "  ", intend ) .. ItemField .. " = " .. tostring( FieldContent ) .. " (" .. type( FieldContent ) .. ")" )
-				DT( FieldContent, intend + 1 );
-			else
-				ml_debug( string.rep( "  ", intend ) .. ItemField .. " = " .. tostring( FieldContent ) .. " (" .. type( FieldContent ) .. ")" )
+		if ( atable ~= nil and type( atable )=="table" ) then
+			for ItemField, FieldContent in pairs( atable ) do
+				if type( FieldContent ) == "table" then
+					ml_debug( string.rep( "  ", intend ) .. ItemField .. " = " .. tostring( FieldContent ) .. " (" .. type( FieldContent ) .. ")" )
+					DT( FieldContent, intend + 1 );
+				else
+					ml_debug( string.rep( "  ", intend ) .. ItemField .. " = " .. tostring( FieldContent ) .. " (" .. type( FieldContent ) .. ")" )
+	  			end
 			end
 		end
-	end
 end
 
 function ml_debug( OutString )
@@ -27,14 +27,12 @@ end
 function ml_error( text )
 	GUI_ToggleConsole(true)
 	d( "**ERROR**: " .. tostring( text ) )
+
+
 end
 
 ml_logstring = ""
-function ml_log( arg )
-	-- prevent out of memory error (ya that really happened)
-	if ( string.len(ml_logstring) > 500 ) then
-		ml_logstring = ""
-	end
+function ml_log( arg )	
 	if (type( arg ) == "boolean" and arg == true) then		
 		ml_logstring = ml_logstring.."("..tostring(arg)..")::"
 		return true
@@ -45,12 +43,12 @@ function ml_log( arg )
 		ml_logstring = ml_logstring.."("..arg..")::"
 		return "Running"
 	else	
-		ml_logstring = ml_logstring.." "..arg
+		ml_logstring = ml_logstring..arg
 	end
 	--d( debug.traceback())	
 end
 
-function ml_GetLogString()
+function ml_GetTraceString()
 	local t = ml_logstring
 	ml_logstring = ""
 	return t

@@ -90,13 +90,12 @@ function ml_blacklist.GetExcludeString(blacklistName)
 		end
     end
 	
+
     if (excludeString ~= "") then
         -- strip off trailing comma
         return excludeString:sub(1,excludeString:len() - 1) 
     else
-        return ""
-		-- returning "" isntead of nil enables us to directly use this func as arguemnt in a filter for the entitylists for example
-		--return nil
+        return nil
     end
 end
 

@@ -2,8 +2,7 @@
 ml_marker = inheritsFrom(nil)
 
 -- external API functions
-function ml_marker:AddField(fieldType, fieldName, defaultValue, fieldChoices)
-	fieldChoices = fieldChoices or ""
+function ml_marker:AddField(fieldType, fieldName, defaultValue)
 	if (self.fields[fieldName] == nil) then
 		local fieldTable = self:GetLastField()
 		
@@ -11,7 +10,8 @@ function ml_marker:AddField(fieldType, fieldName, defaultValue, fieldChoices)
 		if (fieldTable) then
 			nextOrder = fieldTable["order"] + 1
 		end
-		self.fields[fieldName] = {type = fieldType, name = fieldName, value = defaultValue, order = nextOrder, choices = fieldChoices}
+
+		self.fields[fieldName] = {type = fieldType, name = fieldName, value = defaultValue, order = nextOrder}
 	else
 		ml_error("Cannot add field "..fieldName.." another field with same name already exists")
 	end
@@ -42,27 +42,6 @@ function ml_marker:GetFieldValue(fieldName)
 		return nil
 	end
 end
-
-function ml_marker:GetFieldChoices(fieldName)
-	local field_table = self:GetFieldTable(fieldName)
-	if (field_table) then
-		return field_table["choices"]
-	else
-		ml_debug("No field with name "..fieldName.." found in the marker table")
-		return nil
-	end
-end
-
-function ml_marker:SetFieldChoices(fieldName, fieldChoices)
-	if (self.fields[fieldName]) then
-		self.fields[fieldName].choices = fieldChoices
-		return true
-	else
-		ml_debug("No field with name "..fieldName.." found in the marker table")
-		return false
-	end
-end
-
 
 function ml_marker:GetFieldType(fieldName)
 	local field_table = self:GetFieldTable(fieldName)
@@ -127,11 +106,11 @@ function ml_marker:Copy()
 	if (name) then
 		local marker = ml_marker:Create(name)
 		for fieldName, fieldTable in pairs(self.fields) do
-			local choiceString = self:GetFieldChoices(fieldName)			
+			
 			if (marker:HasField(fieldName)) then
 				marker:SetFieldValue(fieldName, self:GetFieldValue(fieldName))
 			else
-				marker:AddField(self:GetFieldType(fieldName), fieldName, self:GetFieldValue(fieldName), choiceString)
+				marker:AddField(self:GetFieldType(fieldName), fieldName, self:GetFieldValue(fieldName))
 			end
 			marker:GetFieldTable(fieldName).order = fieldTable.order
 		end
@@ -241,6 +220,6 @@ function ml_marker:Create(markerName)
 	
 	-- maxlevel
 	newMarker:AddField("int", strings[gCurrentLanguage].maxLevel, 0)
-		
+	
 	return newMarker
 end
