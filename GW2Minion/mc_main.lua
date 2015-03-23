@@ -11,7 +11,7 @@ mc_global.BotModes = {}
 ml_global_information = { }
 ml_global_information.Now = 0
 
-mc_global.WorldMarkerType = 24 -- enum for "in current map", changes on larger patches sometimes
+mc_global.WorldMarkerType = 26 -- enum for "in current map", changes on larger patches sometimes
 
 
 function mc_global.moduleinit()
