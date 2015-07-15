@@ -44,7 +44,6 @@ ml_mesh_mgr.SetEvacPoint = function () return end -- Needs to get set
 ml_mesh_mgr.nextNavMesh = nil -- Holds the navmeshfilename that should get loaded
 ml_mesh_mgr.currentMesh = ml_mesh.Create()
 ml_mesh_mgr.loadingMesh = false
-ml_mesh_mgr.loadObjectFile = false
 ml_mesh_mgr.averagegameunitsize = 50
 ml_mesh_mgr.OMC = 0
 ml_mesh_mgr.transitionthreshold = 10 -- distance when to autoset an OMC, like when we we'r walking though a portal or door but are still in the same map
@@ -90,6 +89,8 @@ function ml_mesh_mgr.ModuleInit()
 	
 	GUI_NewButton(ml_mesh_mgr.mainwindow.name,GetString("saveMesh"),"saveMeshEvent") --GetString("editor"))
 	RegisterEventHandler("saveMeshEvent",ml_mesh_mgr.SaveMesh)   
+	GUI_NewButton(ml_mesh_mgr.mainwindow.name,GetString("buildNAVMesh"),"buildMeshEvent") --GetStringML("editor"))
+	RegisterEventHandler("buildMeshEvent",ml_mesh_mgr.BuildMesh)
 	
 	GUI_NewButton(ml_mesh_mgr.mainwindow.name,"CTRL+M:ChangeMeshRenderDepth","ChangeMeshDepth")
 	
@@ -306,8 +307,6 @@ function ml_mesh_mgr.SwitchNavmesh()
 				gnewmeshname = ""
 				
 			else
-				-- Dont reload the obj file again
-				ml_mesh_mgr.loadObjectFile = false
 				-- To prevent (re-)loading or saving of mesh data while the mesh is beeing build/loaded
 				ml_mesh_mgr.loadingMesh = true
 				
@@ -552,6 +551,10 @@ function ml_mesh_mgr.SaveMesh()
 		MeshManager:ShowTriMesh(false)
 		NavigationManager:ShowNavMesh(false)
 		
+		if (NavigationManager:IsObjectFileLoaded() == false and gmeshname ~= "none") then
+			d("Current mesh has to be loaded before you can save it, please press 'Show Triangles' and let it load before you save again.")
+			return
+		end
 		local filename = ""
 		-- If a new Meshname is given, create a new file and save it in there
 		if ( gnewmeshname ~= nil and gnewmeshname ~= "" ) then
@@ -603,7 +606,7 @@ function ml_mesh_mgr.SaveMesh()
 				-- Update UI
 				gmeshname = ml_mesh_mgr.nextNavMesh
 				
-				ml_mesh_mgr.currentMesh.MapID = 0 -- triggers the reloading of the default mesh
+				--ml_mesh_mgr.currentMesh.MapID = 0 -- triggers the reloading of the default mesh
 				
 			else
 				ml_error("While saving the current Navmesh: "..filename)
@@ -621,6 +624,9 @@ function ml_mesh_mgr.SaveMeshData(filename)
 	
 end
 
+function ml_mesh_mgr.BuildMesh()
+	ml_mesh_mgr.currentMesh.MapID = 0 -- triggers the reloading of the default mesh, causing the c++ part to rebuild the mesh if .obj file changed
+end
 
 -- Deletes the current meshdata and resets the meshmanagerdata
 function ml_mesh_mgr.ClearNavMesh()
@@ -720,6 +726,7 @@ function ml_mesh_mgr.NavMeshUpdate()
 	gnewmeshname = ""
 	ml_mesh_mgr.loadingMesh = false
 	if ( gShowMesh == "1" ) then
+		ml_mesh_mgr.LoadObjectFile()
 		MeshManager:ShowTriMesh(true)
 	end
 	if ( gShowPath == "1" ) then
@@ -802,9 +809,8 @@ end
 -- load the obj file of the mesh for editing functions
 function ml_mesh_mgr.LoadObjectFile()
 	if ( gmeshname ~= "none" and not NavigationManager:IsObjectFileLoaded()) then
-		d("Loading .OBJ file for mesh...")
-		ml_mesh_mgr.loadObjectFile = true
-		ml_mesh_mgr.LoadNavMesh(gmeshname)
+		d("Loading .OBJ file for mesh "..ml_mesh_mgr.navmeshfilepath..gmeshname)
+		NavigationManager:LoadMeshObj(ml_mesh_mgr.navmeshfilepath..gmeshname)
 	end
 end
 
