@@ -1,4 +1,5 @@
 ml_globals = {}
+ml_globals.MAX_SKILLBAR_SLOTS = 20
 
 -- Global vars which are used very often and we can just reduce the hammering by getting them once per frame
 function ml_globals.UpdateGlobals()
